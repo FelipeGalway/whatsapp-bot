@@ -1,0 +1,51 @@
+const contactsDiv = document.getElementById('contacts');
+const messagesDiv = document.getElementById('messages');
+const inputMessage = document.getElementById('input-message');
+const sendBtn = document.getElementById('send-btn');
+
+let selectedContactId = null;
+
+async function fetchContacts() {
+  const res = await fetch('http://localhost:3000/contacts');
+  const contacts = await res.json();
+  contactsDiv.innerHTML = '';
+  contacts.forEach(contact => {
+    const div = document.createElement('div');
+    div.classList.add('contact');
+    div.textContent = contact.name || contact.whatsapp_id;
+    div.onclick = () => loadMessages(contact.id);
+    contactsDiv.appendChild(div);
+  });
+}
+
+async function loadMessages(contactId) {
+  selectedContactId = contactId;
+  const res = await fetch(`http://localhost:3000/messages/${contactId}`);
+  const messages = await res.json();
+
+  messagesDiv.innerHTML = '';
+  messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.classList.add('message');
+    div.innerHTML = `<span class="sender">${msg.sender}:</span> ${msg.message} <div class="timestamp">${msg.timestamp}</div>`;
+    messagesDiv.appendChild(div);
+  });
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+sendBtn.onclick = async () => {
+  const text = inputMessage.value.trim();
+  if (!text || !selectedContactId) return;
+
+  // Enviar mensagem para backend (API que vai fazer Puppeteer enviar)
+  await fetch('http://localhost:3000/send-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contactId: selectedContactId, message: text })
+  });
+
+  inputMessage.value = '';
+  loadMessages(selectedContactId);
+};
+
+fetchContacts();

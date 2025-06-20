@@ -1,0 +1,18 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando **Node.js**, **Puppeteer**, **SQLite** e uma interface web simples. Ele interage com o **WhatsApp Web** de forma automatizada, com o objetivo de simular funcionalidades básicas do aplicativo: **capturar e exibir conversas**, além de **permitir o envio de mensagens** por meio de uma interface personalizada.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "puppeteer": "^24.10.2",
+    "sqlite3": "^5.1.7"
+  }
+}
