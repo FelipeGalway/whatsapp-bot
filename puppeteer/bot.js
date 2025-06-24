@@ -52,55 +52,72 @@ const db = require('../database/db');
     }
 
     async function openChatByName(name) {
-        const found = await page.evaluate((contactName) => {
-            const contacts = Array.from(document.querySelectorAll('span[dir="auto"][title]'));
-            for (const el of contacts) {
-                if (el.getAttribute('title') === contactName) {
-                    const row = el.closest('div[role="row"]');
-                    if (row) {
-                        row.click();
+        const found = await page.evaluate(async (contactName) => {
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            const scrollContainer = document.querySelector('._ak72'); // container da lista de contatos
+            if (!scrollContainer) return false;
+
+            for (let i = 0; i < 10; i++) {
+                const contactElements = Array.from(document.querySelectorAll('span[title]'));
+                for (const el of contactElements) {
+                    if (el.getAttribute('title') === contactName) {
+                        el.click();
                         return true;
-                    } else {
-                        return false;
                     }
                 }
+                scrollContainer.scrollBy(0, 300);
+                await delay(500);
             }
+
             return false;
         }, name);
 
         if (!found) {
             console.log(`❌ Contato "${name}" não encontrado ou não clicável.`);
+            return false;
         } else {
             console.log(`➡️ Conversa com "${name}" aberta.`);
-            await page.waitForTimeout(1500);
+            // Espera o carregamento da conversa
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Scroll para o topo do chat para carregar mensagens antigas
+            await page.evaluate(() => {
+                const chatContainer = document.querySelector('div[data-testid="chat-history"]');
+                if (chatContainer) {
+                    chatContainer.scrollTop = 0;
+                }
+            });
+            // Espera mensagens antigas carregarem
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            return true;
         }
     }
 
     async function getMessages() {
-        // Seleciona todas as mensagens na conversa atual
-        // Mensagens geralmente têm o atributo 'data-id' ou estão dentro de divs com role="row"
-        const messageElements = await page.$$('div[role="row"]');
+        return page.evaluate(() => {
+            const messages = [];
+            const msgContainers = document.querySelectorAll('div[data-pre-plain-text]');
 
-        let messages = [];
+            msgContainers.forEach(div => {
+                const textSpan = div.querySelector('span.selectable-text.copyable-text');
+                if (!textSpan) return;
 
-        for (const messageEl of messageElements) {
-            // Busca o texto da mensagem
-            const textEl = await messageEl.$('span[dir="ltr"] span.selectable-text span, span.selectable-text span');
-            const text = textEl ? await page.evaluate(el => el.innerText, textEl) : '';
+                const timestampRaw = div.getAttribute('data-pre-plain-text');
+                const timestampMatch = timestampRaw.match(/\[(.*?)\]/);
+                const timestamp = timestampMatch ? timestampMatch[1] : '';
 
-            // Busca o horário da mensagem
-            const timeEl = await messageEl.$('span[data-testid="msg-time"], span[aria-label*="horário"]');
-            const timestamp = timeEl ? await page.evaluate(el => el.innerText, timeEl) : '';
+                const text = textSpan.innerText;
+                messages.push({
+                    sender: timestampRaw.includes('Você') ? 'me' : 'contact',
+                    timestamp,
+                    text
+                });
+            });
 
-            // Determina quem enviou (baseado na classe)
-            const className = await page.evaluate(el => el.className, messageEl);
-            const sender = className.includes('message-out') ? 'me' : 'other';
-
-            if (text) {
-                messages.push({ sender, timestamp, text });
-            }
-        }
-        return messages;
+            return messages;
+        });
     }
 
     // Início da varredura
@@ -110,7 +127,11 @@ const db = require('../database/db');
     for (const contact of contacts) {
         console.log(`➡️ Abrindo conversa de: ${contact.name}`);
 
-        await openChatByName(contact.name);
+        const chatOpened = await openChatByName(contact.name);
+        if (!chatOpened) continue; // pula se não encontrou contato
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
         await saveContact(contact.id, contact.name);
 
         const messages = await getMessages();
@@ -120,6 +141,7 @@ const db = require('../database/db');
             await saveMessage(contact.id, msg.sender, msg.timestamp, msg.text);
         }
     }
+
 
     console.log('✅ Varredura concluída.');
     // Se quiser fechar o navegador, descomente a linha abaixo

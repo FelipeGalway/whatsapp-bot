@@ -42,11 +42,11 @@ Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando
 
 🧭 **Puppeteer** – automação de navegador via Chrome
 
-⚙️ **Express.js** – API para comunicação entre frontend e backend
+⚙️ **Express.js** – API para comunicação entre front-end e back-end
 
 🛢️ **SQLite** – banco de dados leve e local
 
-🌐 **HTML/CSS/JS** – frontend simples, sem frameworks pesados
+🌐 **HTML/CSS/JS** – front-end simples, sem frameworks pesados
 
 ## 📁 Estrutura do Projeto
 
@@ -78,26 +78,51 @@ whatsapp-bot/
 
 ## 📥 Como Rodar o Projeto
 
-- Clone o repositório
+- Clone o repositório:
     ```bash
     git clone https://github.com/FelipeGalway/whatsapp-bot
     cd whatsapp-bot
     ```
 
-- Instale as dependências
+- Inicialize o projeto (caso ainda não exista `package.json`):
     ```bash
-    npm install
+    npm init -y
     ```
 
-- Inicie a automação (Puppeteer)
+- Instale as dependências:
     ```bash
-    node puppeteer/bot.js
+    npm install express cors sqlite3 puppeteer
     ```
 
-- Em outro terminal, inicie o servidor Express
+- Inicie o servidor da API (Express):
     ```bash
     node server/index.js
     ```
 
-- Abra a interface web (pode ser um servidor estático ou localhost)
+    - A API estará disponível em: http://localhost:3000
+
+- Em outro terminal, execute o bot com Puppeteer:
+    ```bash
+    node puppeteer/bot.js
+    ```
+
+    - Um navegador será aberto com o WhatsApp Web.
+
+    - Escaneie o QR Code com seu celular.
+
+    - O bot fará a varredura dos contatos e mensagens, salvando no banco SQLite (`database/whatsapp.db`).
+
+- Abra a interface web:
+
+    - Navegue até o arquivo `frontend/index.html`
+
+    - Você pode abrir no navegador diretamente, ou usar uma extensão como Live Server (VS Code) ou Five Server para evitar problemas com CORS.
+
+    - Funcionalidades:
+
+        - Carrega contatos e mensagens diretamente do banco
+
+        - Interface web simulando o WhatsApp
+
+        - Envio de mensagens via front-end 
     

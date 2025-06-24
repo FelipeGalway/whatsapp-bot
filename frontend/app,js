@@ -1,51 +1,99 @@
-const contactsDiv = document.getElementById('contacts');
-const messagesDiv = document.getElementById('messages');
-const inputMessage = document.getElementById('input-message');
-const sendBtn = document.getElementById('send-btn');
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await loadContacts();
+  } catch (error) {
+    console.error('Erro inicial:', error);
+    alert('Erro ao carregar contatos. Verifique o console.');
+  }
+});
 
-let selectedContactId = null;
+async function loadContacts() {
+  const contactsDiv = document.getElementById('contacts');
+  
+  try {
+    const res = await fetch('http://localhost:3000/contacts');
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const contacts = await res.json();
+    console.log('Contatos recebidos:', contacts); // Debug
+    
+    contactsDiv.innerHTML = '';
+    
+    if (contacts.length === 0) {
+      contactsDiv.innerHTML = '<div class="no-contacts">Nenhum contato encontrado</div>';
+      return;
+    }
 
-async function fetchContacts() {
-  const res = await fetch('http://localhost:3000/contacts');
-  const contacts = await res.json();
-  contactsDiv.innerHTML = '';
-  contacts.forEach(contact => {
-    const div = document.createElement('div');
-    div.classList.add('contact');
-    div.textContent = contact.name || contact.whatsapp_id;
-    div.onclick = () => loadMessages(contact.id);
-    contactsDiv.appendChild(div);
-  });
+    contacts.forEach(contact => {
+      const contactElement = document.createElement('div');
+      contactElement.className = 'contact';
+      contactElement.textContent = contact.name || contact.whatsapp_id;
+      contactElement.onclick = () => loadMessages(contact.id);
+      contactsDiv.appendChild(contactElement);
+    });
+
+    // Carrega mensagens do primeiro contato automaticamente
+    if (contacts[0].id) {
+      await loadMessages(contacts[0].id);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar contatos:', error);
+    contactsDiv.innerHTML = '<div class="error">Erro ao carregar contatos</div>';
+  }
 }
 
 async function loadMessages(contactId) {
-  selectedContactId = contactId;
-  const res = await fetch(`http://localhost:3000/messages/${contactId}`);
-  const messages = await res.json();
-
-  messagesDiv.innerHTML = '';
-  messages.forEach(msg => {
-    const div = document.createElement('div');
-    div.classList.add('message');
-    div.innerHTML = `<span class="sender">${msg.sender}:</span> ${msg.message} <div class="timestamp">${msg.timestamp}</div>`;
-    messagesDiv.appendChild(div);
-  });
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  const messagesDiv = document.getElementById('messages');
+  
+  try {
+    const res = await fetch(`http://localhost:3000/messages/${contactId}`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const messages = await res.json();
+    console.log('Mensagens recebidas:', messages); // Debug
+    
+    messagesDiv.innerHTML = '';
+    
+    messages.forEach(msg => {
+      const msgElement = document.createElement('div');
+      msgElement.className = 'message';
+      msgElement.innerHTML = `
+        <span class="sender">${msg.sender}:</span> 
+        ${msg.message} 
+        <div class="timestamp">${msg.timestamp}</div>
+      `;
+      messagesDiv.appendChild(msgElement);
+    });
+    
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } catch (error) {
+    console.error('Erro ao carregar mensagens:', error);
+    messagesDiv.innerHTML = '<div class="error">Erro ao carregar mensagens</div>';
+  }
 }
 
-sendBtn.onclick = async () => {
+// Envio de mensagens (mantido igual)
+document.getElementById('send-btn').onclick = async () => {
+  const inputMessage = document.getElementById('input-message');
   const text = inputMessage.value.trim();
+  
   if (!text || !selectedContactId) return;
 
-  // Enviar mensagem para backend (API que vai fazer Puppeteer enviar)
-  await fetch('http://localhost:3000/send-message', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contactId: selectedContactId, message: text })
-  });
-
-  inputMessage.value = '';
-  loadMessages(selectedContactId);
+  try {
+    await fetch('http://localhost:3000/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        contactId: selectedContactId, 
+        message: text 
+      })
+    });
+    
+    inputMessage.value = '';
+    await loadMessages(selectedContactId);
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+  }
 };
 
-fetchContacts();
+let selectedContactId = null;

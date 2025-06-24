@@ -6,6 +6,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Adicione esta rota
+app.post('/send-message', (req, res) => {
+  const { contactId, message } = req.body;
+
+  // Aqui você implementaria o Puppeteer para enviar a mensagem real
+  console.log(`Mensagem para ${contactId}: ${message}`);
+
+  // Simulando o salvamento no banco
+  db.run(
+    'INSERT INTO messages (contact_id, sender, message, timestamp) VALUES (?, ?, ?, ?)',
+    [contactId, 'me', message, new Date().toLocaleTimeString()],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, messageId: this.lastID });
+    }
+  );
+});
+
 // Rota teste
 app.get('/', (req, res) => {
   res.send('API do WhatsApp Bot funcionando');
