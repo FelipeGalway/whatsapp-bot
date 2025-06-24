@@ -15,7 +15,7 @@ async function loadContacts() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const contacts = await res.json();
-    console.log('Contatos recebidos:', contacts); // Debug
+    console.log('Contatos recebidos:', contacts);
     
     contactsDiv.innerHTML = '';
     
@@ -50,7 +50,7 @@ async function loadMessages(contactId) {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const messages = await res.json();
-    console.log('Mensagens recebidas:', messages); // Debug
+    console.log('Mensagens recebidas:', messages); 
     
     messagesDiv.innerHTML = '';
     
@@ -72,7 +72,7 @@ async function loadMessages(contactId) {
   }
 }
 
-// Envio de mensagens (mantido igual)
+// Envio de mensagens 
 document.getElementById('send-btn').onclick = async () => {
   const inputMessage = document.getElementById('input-message');
   const text = inputMessage.value.trim();

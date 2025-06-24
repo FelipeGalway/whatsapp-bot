@@ -6,11 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Adicione esta rota
 app.post('/send-message', (req, res) => {
   const { contactId, message } = req.body;
 
-  // Aqui você implementaria o Puppeteer para enviar a mensagem real
   console.log(`Mensagem para ${contactId}: ${message}`);
 
   // Simulando o salvamento no banco
@@ -24,11 +22,6 @@ app.post('/send-message', (req, res) => {
       res.json({ success: true, messageId: this.lastID });
     }
   );
-});
-
-// Rota teste
-app.get('/', (req, res) => {
-  res.send('API do WhatsApp Bot funcionando');
 });
 
 // Retornar lista de contatos
@@ -56,7 +49,6 @@ app.get('/messages/:contactId', (req, res) => {
   );
 });
 
-// Porta do servidor
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

@@ -13,7 +13,7 @@ const db = require('../database/db');
 
     console.log('⏳ Aguardando login... Escaneie o QR Code no WhatsApp Web.');
 
-    // Aguarda até os contatos aparecerem (ajustado para o seletor correto)
+    // Aguarda até os contatos aparecerem 
     await page.waitForFunction(() => {
         return document.querySelectorAll('span[dir="auto"][title]').length > 0;
     }, { timeout: 0 });
@@ -45,7 +45,7 @@ const db = require('../database/db');
         let contacts = [];
         for (const el of contactElements) {
             const name = await page.evaluate(el => el.getAttribute('title'), el);
-            const id = name; // Você pode usar o nome como ID, ou criar outra lógica
+            const id = name;
             contacts.push({ id, name });
         }
         return contacts;
@@ -55,7 +55,7 @@ const db = require('../database/db');
         const found = await page.evaluate(async (contactName) => {
             const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-            const scrollContainer = document.querySelector('._ak72'); // container da lista de contatos
+            const scrollContainer = document.querySelector('._ak72');
             if (!scrollContainer) return false;
 
             for (let i = 0; i < 10; i++) {
@@ -89,7 +89,7 @@ const db = require('../database/db');
                 }
             });
             // Espera mensagens antigas carregarem
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
             return true;
         }
@@ -98,29 +98,59 @@ const db = require('../database/db');
     async function getMessages() {
         return page.evaluate(() => {
             const messages = [];
-            const msgContainers = document.querySelectorAll('div[data-pre-plain-text]');
+            const msgContainers = Array.from(document.querySelectorAll(
+                'div[data-pre-plain-text], ' +
+                'div[data-id^="false_"]'
+            ));
 
-            msgContainers.forEach(div => {
-                const textSpan = div.querySelector('span.selectable-text.copyable-text');
-                if (!textSpan) return;
+            msgContainers.forEach(container => {
+                try {
+                    const rawMetadata = container.getAttribute('data-pre-plain-text') || '';
 
-                const timestampRaw = div.getAttribute('data-pre-plain-text');
-                const timestampMatch = timestampRaw.match(/\[(.*?)\]/);
-                const timestamp = timestampMatch ? timestampMatch[1] : '';
+                    let sender = 'unknown';
+                    let timestamp = '';
 
-                const text = textSpan.innerText;
-                messages.push({
-                    sender: timestampRaw.includes('Você') ? 'me' : 'contact',
-                    timestamp,
-                    text
-                });
+                    if (rawMetadata.includes('Você')) {
+                        sender = 'me';
+                    } else if (rawMetadata.includes(']')) {
+                        sender = rawMetadata.split('] ')[1]?.trim() || 'unknown';
+                    }
+
+                    const timeMatch = rawMetadata.match(/\[(\d{1,2}:\d{1,2}(?::\d{1,2})?)\]/);
+                    timestamp = timeMatch ? timeMatch[1] : '';
+
+                    let text = '';
+
+                    const textSpan = container.querySelector('span.selectable-text.copyable-text');
+                    if (textSpan) {
+                        text = textSpan.innerText;
+                    }
+
+                    else {
+                        const textDiv = container.querySelector('div.copyable-text');
+                        if (textDiv) {
+                            text = textDiv.innerText;
+                        }
+                    }
+
+                    if (text || rawMetadata.includes('mídia ocultada')) {
+                        messages.push({
+                            sender,
+                            timestamp,
+                            text: text || '[mídia]',
+                            raw: rawMetadata
+                        });
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar mensagem:', e);
+                }
             });
 
             return messages;
         });
     }
 
-    // Início da varredura
+    // Início da varredura    
     const contacts = await getContacts();
     console.log(`🔍 Encontrados ${contacts.length} contatos.`);
 
@@ -142,8 +172,6 @@ const db = require('../database/db');
         }
     }
 
-
     console.log('✅ Varredura concluída.');
-    // Se quiser fechar o navegador, descomente a linha abaixo
-    // await browser.close();
+
 })();
