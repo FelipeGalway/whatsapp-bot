@@ -1,3 +1,5 @@
+let selectedContactId = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadContacts();
@@ -16,8 +18,6 @@ async function loadContacts() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const contacts = await res.json();
-    console.log('Contatos recebidos:', contacts);
-
     contactsDiv.innerHTML = '';
 
     if (contacts.length === 0) {
@@ -31,10 +31,8 @@ async function loadContacts() {
       contactElement.textContent = contact.name || contact.whatsapp_id;
       contactElement.onclick = () => {
         selectedContactId = contact.id;
-
         document.querySelectorAll('.contact').forEach(c => c.classList.remove('selected'));
         contactElement.classList.add('selected');
-
         loadMessages(contact.id);
       };
       contactsDiv.appendChild(contactElement);
@@ -58,8 +56,6 @@ async function loadMessages(contactId) {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const messages = await res.json();
-    console.log('Mensagens recebidas:', messages);
-
     messagesDiv.innerHTML = '';
 
     messages.forEach(msg => {
@@ -80,7 +76,7 @@ async function loadMessages(contactId) {
   }
 }
 
-// Envia mensagens 
+// Envia mensagem
 document.getElementById('send-btn').onclick = async () => {
   const inputMessage = document.getElementById('input-message');
   const text = inputMessage.value.trim();
@@ -103,5 +99,3 @@ document.getElementById('send-btn').onclick = async () => {
     console.error('Erro ao enviar mensagem:', error);
   }
 };
-
-let selectedContactId = null;

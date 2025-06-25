@@ -105,8 +105,8 @@ let page;
                     const text = textSpan ? textSpan.innerText.trim() : '';
 
                     const timeSpan =
-                        container.querySelector('span.x1c4vz4f.x2lah0s') || 
-                        container.querySelector('span.x1rg5ohu');          
+                        container.querySelector('span.x1c4vz4f.x2lah0s') ||
+                        container.querySelector('span.x1rg5ohu');
 
                     const timestamp = timeSpan ? timeSpan.innerText.trim() : '';
 
@@ -164,18 +164,24 @@ let page;
         }
     }
 
+    function getPendingMessages() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+      SELECT m.id, m.message, c.name AS contact_name
+      FROM messages m
+      JOIN contacts c ON m.contact_id = c.id
+      WHERE m.sender = 'me' AND m.sent = 0
+      ORDER BY m.timestamp ASC
+    `, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    }
+
     async function processPendingMessages() {
-        db.all(`
-            SELECT m.id, m.message, c.name AS contact_name
-            FROM messages m
-            JOIN contacts c ON m.contact_id = c.id
-            WHERE m.sender = 'me' AND m.sent = 0
-            ORDER BY m.timestamp ASC
-        `, async (err, rows) => {
-            if (err) {
-                console.error('Erro ao buscar mensagens pendentes:', err);
-                return;
-            }
+        try {
+            const rows = await getPendingMessages();
 
             for (const msg of rows) {
                 console.log(`➡️ Enviando mensagem pendente para ${msg.contact_name}...`);
@@ -185,9 +191,9 @@ let page;
                 }
                 await new Promise(r => setTimeout(r, 3000));
             }
-        });
+        } catch (error) {
+            console.error('Erro ao buscar mensagens pendentes:', error);
+        }
     }
-
-    setInterval(processPendingMessages, 10000);
 
 })();
