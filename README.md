@@ -30,11 +30,11 @@ Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando
 
 - Ao enviar uma mensagem pela interface web:
 
-- A automação localiza a conversa correspondente no WhatsApp Web real.
+    - A automação localiza a conversa correspondente no WhatsApp Web real.
 
-- Insere o texto no campo de mensagem.
+    - Insere o texto no campo de mensagem.
 
-- Simula o clique no botão de envio.
+    - Simula o clique no botão de envio.
 
 ## 🧰 Tecnologias Utilizadas
 
@@ -69,12 +69,6 @@ whatsapp-bot/
 ├── README.md
 └── package.json
 ```
-
-## 📌 Observações
-
-- A automação depende de seletores do WhatsApp Web, que podem mudar ao longo do tempo. Ajustes podem ser necessários se o layout da página for atualizado.
-
-- Este projeto é educacional e não deve ser utilizado para fins comerciais ou violar os termos de serviço do WhatsApp.
 
 ## 📥 Como Rodar o Projeto
 
@@ -152,5 +146,8 @@ DELETE FROM contacts;
 DELETE FROM messages;
 ```
 
-Alternativamente, você pode excluir manualmente o arquivo `database/whatsapp.db` para reiniciar o banco.
-    
+- Alternativamente, você pode excluir manualmente o arquivo `database/whatsapp.db` para reiniciar o banco.
+
+## 📌 Observação
+
+- A automação depende de seletores do WhatsApp Web, que podem mudar ao longo do tempo. Ajustes podem ser necessários se o layout da página for atualizado.
