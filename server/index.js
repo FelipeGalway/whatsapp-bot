@@ -1,5 +1,5 @@
 const express = require('express');
-const { db } = require('../database/db');
+const { db, initializeDatabase } = require('../database/db');
 const cors = require('cors');
 const path = require('path');
 
@@ -7,6 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+(async () => {
+  try {
+    console.log('Inicializando banco de dados...');
+    await initializeDatabase();
+    console.log('Banco inicializado com sucesso.');
+       
+  } catch (err) {
+    console.error('Erro ao inicializar banco de dados:', err);
+    process.exit(1);
+  }
+})();
 
 app.post('/send-message', (req, res) => {
   const { contactId, message } = req.body;

@@ -1,10 +1,11 @@
 const puppeteer = require('puppeteer');
-const { db } = require('../database/db');
+const { db, initializeDatabase } = require('../database/db');
 
 let browser;
 let page;
 
 (async () => {
+    await initializeDatabase();
     browser = await puppeteer.launch({
         headless: false,
         defaultViewport: null,
@@ -96,43 +97,24 @@ let page;
     async function getMessages() {
         return page.evaluate(() => {
             const messages = [];
-            const msgContainers = Array.from(document.querySelectorAll(
-                'div[data-pre-plain-text], div[data-id^="false_"]'
-            ));
+            const containers = document.querySelectorAll('div.message-in, div.message-out');
 
-            msgContainers.forEach(container => {
+            containers.forEach(container => {
                 try {
-                    const rawMetadata = container.getAttribute('data-pre-plain-text') || '';
-                    let sender = 'unknown';
-                    let timestamp = '';
+                    const textSpan = container.querySelector('span.selectable-text span');
+                    const text = textSpan ? textSpan.innerText.trim() : '';
 
-                    if (rawMetadata.includes('Você')) {
-                        sender = 'me';
-                    } else if (rawMetadata.includes(']')) {
-                        sender = rawMetadata.split('] ')[1]?.trim() || 'unknown';
-                    }
+                    const timeSpan =
+                        container.querySelector('span.x1c4vz4f.x2lah0s') || 
+                        container.querySelector('span.x1rg5ohu');          
 
-                    const timeMatch = rawMetadata.match(/\[(\d{1,2}:\d{1,2}(?::\d{1,2})?)\]/);
-                    timestamp = timeMatch ? timeMatch[1] : '';
+                    const timestamp = timeSpan ? timeSpan.innerText.trim() : '';
 
-                    let text = '';
-                    const textSpan = container.querySelector('span.selectable-text.copyable-text');
-                    if (textSpan) {
-                        text = textSpan.innerText;
-                    } else {
-                        const textDiv = container.querySelector('div.copyable-text');
-                        if (textDiv) {
-                            text = textDiv.innerText;
-                        }
-                    }
+                    const isSentByMe = container.classList.contains('message-out');
+                    const sender = isSentByMe ? 'me' : 'other';
 
-                    if (text || rawMetadata.includes('mídia ocultada')) {
-                        messages.push({
-                            sender,
-                            timestamp,
-                            text: text || '[mídia]',
-                            raw: rawMetadata
-                        });
+                    if (text) {
+                        messages.push({ sender, timestamp, text });
                     }
                 } catch (e) {
                     console.error('Erro ao processar mensagem:', e);

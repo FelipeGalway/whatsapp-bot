@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Carrega contatos
 async function loadContacts() {
   const contactsDiv = document.getElementById('contacts');
 
@@ -39,7 +40,6 @@ async function loadContacts() {
       contactsDiv.appendChild(contactElement);
     });
 
-    // Carrega mensagens do primeiro contato automaticamente
     if (contacts[0].id) {
       await loadMessages(contacts[0].id);
     }
@@ -49,6 +49,7 @@ async function loadContacts() {
   }
 }
 
+// Carrega mensagens
 async function loadMessages(contactId) {
   const messagesDiv = document.getElementById('messages');
 
@@ -79,7 +80,7 @@ async function loadMessages(contactId) {
   }
 }
 
-// Envio de mensagens 
+// Envia mensagens 
 document.getElementById('send-btn').onclick = async () => {
   const inputMessage = document.getElementById('input-message');
   const text = inputMessage.value.trim();
