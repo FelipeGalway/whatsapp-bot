@@ -1,11 +1,10 @@
 const puppeteer = require('puppeteer');
-const { db, initializeDatabase } = require('../database/db');
+const { db } = require('../database/db');
 
 let browser;
 let page;
 
 (async () => {
-    await initializeDatabase();
     browser = await puppeteer.launch({
         headless: false,
         defaultViewport: null,
@@ -97,24 +96,43 @@ let page;
     async function getMessages() {
         return page.evaluate(() => {
             const messages = [];
-            const containers = document.querySelectorAll('div.message-in, div.message-out');
+            const msgContainers = Array.from(document.querySelectorAll(
+                'div[data-pre-plain-text], div[data-id^="false_"]'
+            ));
 
-            containers.forEach(container => {
+            msgContainers.forEach(container => {
                 try {
-                    const textSpan = container.querySelector('span.selectable-text span');
-                    const text = textSpan ? textSpan.innerText.trim() : '';
+                    const rawMetadata = container.getAttribute('data-pre-plain-text') || '';
+                    let sender = 'unknown';
+                    let timestamp = '';
 
-                    const timeSpan =
-                        container.querySelector('span.x1c4vz4f.x2lah0s') ||
-                        container.querySelector('span.x1rg5ohu');
+                    if (rawMetadata.includes('Você')) {
+                        sender = 'me';
+                    } else if (rawMetadata.includes(']')) {
+                        sender = rawMetadata.split('] ')[1]?.trim() || 'unknown';
+                    }
 
-                    const timestamp = timeSpan ? timeSpan.innerText.trim() : '';
+                    const timeMatch = rawMetadata.match(/\[(\d{1,2}:\d{1,2}(?::\d{1,2})?)\]/);
+                    timestamp = timeMatch ? timeMatch[1] : '';
 
-                    const isSentByMe = container.classList.contains('message-out');
-                    const sender = isSentByMe ? 'me' : 'other';
+                    let text = '';
+                    const textSpan = container.querySelector('span.selectable-text.copyable-text');
+                    if (textSpan) {
+                        text = textSpan.innerText;
+                    } else {
+                        const textDiv = container.querySelector('div.copyable-text');
+                        if (textDiv) {
+                            text = textDiv.innerText;
+                        }
+                    }
 
-                    if (text) {
-                        messages.push({ sender, timestamp, text });
+                    if (text || rawMetadata.includes('mídia ocultada')) {
+                        messages.push({
+                            sender,
+                            timestamp,
+                            text: text || '[mídia]',
+                            raw: rawMetadata
+                        });
                     }
                 } catch (e) {
                     console.error('Erro ao processar mensagem:', e);
@@ -164,24 +182,18 @@ let page;
         }
     }
 
-    function getPendingMessages() {
-        return new Promise((resolve, reject) => {
-            db.all(`
-      SELECT m.id, m.message, c.name AS contact_name
-      FROM messages m
-      JOIN contacts c ON m.contact_id = c.id
-      WHERE m.sender = 'me' AND m.sent = 0
-      ORDER BY m.timestamp ASC
-    `, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-    }
-
     async function processPendingMessages() {
-        try {
-            const rows = await getPendingMessages();
+        db.all(`
+            SELECT m.id, m.message, c.name AS contact_name
+            FROM messages m
+            JOIN contacts c ON m.contact_id = c.id
+            WHERE m.sender = 'me' AND m.sent = 0
+            ORDER BY m.timestamp ASC
+        `, async (err, rows) => {
+            if (err) {
+                console.error('Erro ao buscar mensagens pendentes:', err);
+                return;
+            }
 
             for (const msg of rows) {
                 console.log(`➡️ Enviando mensagem pendente para ${msg.contact_name}...`);
@@ -191,9 +203,9 @@ let page;
                 }
                 await new Promise(r => setTimeout(r, 3000));
             }
-        } catch (error) {
-            console.error('Erro ao buscar mensagens pendentes:', error);
-        }
+        });
     }
+
+    setInterval(processPendingMessages, 10000);
 
 })();

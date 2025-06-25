@@ -2,6 +2,8 @@
 
 Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando **Node.js**, **Puppeteer**, **SQLite** e uma interface web simples. Ele interage com o **WhatsApp Web** de forma automatizada, com o objetivo de simular funcionalidades básicas do aplicativo: **capturar e exibir conversas**, além de **permitir o envio de mensagens** por meio de uma interface personalizada.
 
+---
+
 ## 🚀 Funcionalidades
 
 🔹**1. Automação com Puppeteer**
@@ -36,6 +38,8 @@ Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando
 
     - Simula o clique no botão de envio.
 
+---
+
 ## 🧰 Tecnologias Utilizadas
 
 🟢 **Node.js** – ambiente de execução JavaScript
@@ -47,6 +51,8 @@ Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando
 🛢️ **SQLite** – banco de dados leve e local
 
 🌐 **HTML/CSS/JS** – front-end simples, sem frameworks pesados
+
+---
 
 ## 📁 Estrutura do Projeto
 
@@ -69,6 +75,8 @@ whatsapp-bot/
 ├── README.md
 └── package.json
 ```
+
+---
 
 ## 📥 Como Rodar o Projeto
 
@@ -147,6 +155,8 @@ DELETE FROM messages;
 ```
 
 - Alternativamente, você pode excluir manualmente o arquivo `database/whatsapp.db` para reiniciar o banco.
+
+---
 
 ## 📌 Observação
 
