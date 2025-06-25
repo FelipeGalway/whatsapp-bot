@@ -1,19 +1,21 @@
 const puppeteer = require('puppeteer');
-const db = require('../database/db');
+const { db } = require('../database/db');
+
+let browser;
+let page;
 
 (async () => {
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
         headless: false,
         defaultViewport: null,
         args: ['--start-maximized'],
     });
 
-    const page = await browser.newPage();
+    page = await browser.newPage();
     await page.goto('https://web.whatsapp.com/');
 
     console.log('⏳ Aguardando login... Escaneie o QR Code no WhatsApp Web.');
 
-    // Aguarda até os contatos aparecerem 
     await page.waitForFunction(() => {
         return document.querySelectorAll('span[dir="auto"][title]').length > 0;
     }, { timeout: 0 });
@@ -54,7 +56,6 @@ const db = require('../database/db');
     async function openChatByName(name) {
         const found = await page.evaluate(async (contactName) => {
             const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
             const scrollContainer = document.querySelector('._ak72');
             if (!scrollContainer) return false;
 
@@ -74,23 +75,20 @@ const db = require('../database/db');
         }, name);
 
         if (!found) {
-            console.log(`❌ Contato "${name}" não encontrado ou não clicável.`);
+            console.log(`❌ Contato "${name}" não encontrado.`);
             return false;
         } else {
             console.log(`➡️ Conversa com "${name}" aberta.`);
-            // Espera o carregamento da conversa
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Scroll para o topo do chat para carregar mensagens antigas
             await page.evaluate(() => {
                 const chatContainer = document.querySelector('div[data-testid="chat-history"]');
                 if (chatContainer) {
                     chatContainer.scrollTop = 0;
                 }
             });
-            // Espera mensagens antigas carregarem
-            await new Promise(resolve => setTimeout(resolve, 3000));
 
+            await new Promise(resolve => setTimeout(resolve, 3000));
             return true;
         }
     }
@@ -99,14 +97,12 @@ const db = require('../database/db');
         return page.evaluate(() => {
             const messages = [];
             const msgContainers = Array.from(document.querySelectorAll(
-                'div[data-pre-plain-text], ' +
-                'div[data-id^="false_"]'
+                'div[data-pre-plain-text], div[data-id^="false_"]'
             ));
 
             msgContainers.forEach(container => {
                 try {
                     const rawMetadata = container.getAttribute('data-pre-plain-text') || '';
-
                     let sender = 'unknown';
                     let timestamp = '';
 
@@ -120,13 +116,10 @@ const db = require('../database/db');
                     timestamp = timeMatch ? timeMatch[1] : '';
 
                     let text = '';
-
                     const textSpan = container.querySelector('span.selectable-text.copyable-text');
                     if (textSpan) {
                         text = textSpan.innerText;
-                    }
-
-                    else {
+                    } else {
                         const textDiv = container.querySelector('div.copyable-text');
                         if (textDiv) {
                             text = textDiv.innerText;
@@ -150,22 +143,19 @@ const db = require('../database/db');
         });
     }
 
-    // Início da varredura    
     const contacts = await getContacts();
     console.log(`🔍 Encontrados ${contacts.length} contatos.`);
 
     for (const contact of contacts) {
         console.log(`➡️ Abrindo conversa de: ${contact.name}`);
-
         const chatOpened = await openChatByName(contact.name);
-        if (!chatOpened) continue; // pula se não encontrou contato
+        if (!chatOpened) continue;
 
         await new Promise(resolve => setTimeout(resolve, 3000));
-
         await saveContact(contact.id, contact.name);
 
         const messages = await getMessages();
-        console.log(`💬 Encontradas ${messages.length} mensagens em "${contact.name}".`);
+        console.log(`💬 ${messages.length} mensagens em "${contact.name}".`);
 
         for (const msg of messages) {
             await saveMessage(contact.id, msg.sender, msg.timestamp, msg.text);
@@ -173,5 +163,49 @@ const db = require('../database/db');
     }
 
     console.log('✅ Varredura concluída.');
+
+    async function sendMessageTo(name, message) {
+        const opened = await openChatByName(name);
+        if (!opened) return false;
+
+        try {
+            await page.waitForSelector('div[contenteditable="true"][data-tab]', { timeout: 5000 });
+            const inputBox = await page.$('div[contenteditable="true"][data-tab]');
+            await inputBox.focus();
+            await page.keyboard.type(message, { delay: 50 });
+            await page.keyboard.press('Enter');
+            console.log(`✅ Mensagem enviada para "${name}"`);
+            return true;
+        } catch (err) {
+            console.error(`❌ Erro ao enviar mensagem para "${name}":`, err.message);
+            return false;
+        }
+    }
+
+    async function processPendingMessages() {
+        db.all(`
+            SELECT m.id, m.message, c.name AS contact_name
+            FROM messages m
+            JOIN contacts c ON m.contact_id = c.id
+            WHERE m.sender = 'me' AND m.sent = 0
+            ORDER BY m.timestamp ASC
+        `, async (err, rows) => {
+            if (err) {
+                console.error('Erro ao buscar mensagens pendentes:', err);
+                return;
+            }
+
+            for (const msg of rows) {
+                console.log(`➡️ Enviando mensagem pendente para ${msg.contact_name}...`);
+                const success = await sendMessageTo(msg.contact_name, msg.message);
+                if (success) {
+                    db.run(`UPDATE messages SET sent = 1 WHERE id = ?`, [msg.id]);
+                }
+                await new Promise(r => setTimeout(r, 3000));
+            }
+        });
+    }
+
+    setInterval(processPendingMessages, 10000);
 
 })();

@@ -9,16 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadContacts() {
   const contactsDiv = document.getElementById('contacts');
-  
+
   try {
     const res = await fetch('http://localhost:3000/contacts');
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    
+
     const contacts = await res.json();
     console.log('Contatos recebidos:', contacts);
-    
+
     contactsDiv.innerHTML = '';
-    
+
     if (contacts.length === 0) {
       contactsDiv.innerHTML = '<div class="no-contacts">Nenhum contato encontrado</div>';
       return;
@@ -28,7 +28,14 @@ async function loadContacts() {
       const contactElement = document.createElement('div');
       contactElement.className = 'contact';
       contactElement.textContent = contact.name || contact.whatsapp_id;
-      contactElement.onclick = () => loadMessages(contact.id);
+      contactElement.onclick = () => {
+        selectedContactId = contact.id;
+
+        document.querySelectorAll('.contact').forEach(c => c.classList.remove('selected'));
+        contactElement.classList.add('selected');
+
+        loadMessages(contact.id);
+      };
       contactsDiv.appendChild(contactElement);
     });
 
@@ -44,16 +51,16 @@ async function loadContacts() {
 
 async function loadMessages(contactId) {
   const messagesDiv = document.getElementById('messages');
-  
+
   try {
     const res = await fetch(`http://localhost:3000/messages/${contactId}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    
+
     const messages = await res.json();
-    console.log('Mensagens recebidas:', messages); 
-    
+    console.log('Mensagens recebidas:', messages);
+
     messagesDiv.innerHTML = '';
-    
+
     messages.forEach(msg => {
       const msgElement = document.createElement('div');
       msgElement.className = 'message';
@@ -64,7 +71,7 @@ async function loadMessages(contactId) {
       `;
       messagesDiv.appendChild(msgElement);
     });
-    
+
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   } catch (error) {
     console.error('Erro ao carregar mensagens:', error);
@@ -76,19 +83,19 @@ async function loadMessages(contactId) {
 document.getElementById('send-btn').onclick = async () => {
   const inputMessage = document.getElementById('input-message');
   const text = inputMessage.value.trim();
-  
+
   if (!text || !selectedContactId) return;
 
   try {
     await fetch('http://localhost:3000/send-message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        contactId: selectedContactId, 
-        message: text 
+      body: JSON.stringify({
+        contactId: selectedContactId,
+        message: text
       })
     });
-    
+
     inputMessage.value = '';
     await loadMessages(selectedContactId);
   } catch (error) {

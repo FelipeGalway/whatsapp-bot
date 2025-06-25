@@ -78,51 +78,79 @@ whatsapp-bot/
 
 ## 📥 Como Rodar o Projeto
 
-- Clone o repositório:
-    ```bash
-    git clone https://github.com/FelipeGalway/whatsapp-bot
-    cd whatsapp-bot
-    ```
+### Passo 1: Clonar o repositório
 
-- Inicialize o projeto (caso ainda não exista `package.json`):
-    ```bash
-    npm init -y
-    ```
+```bash
+git clone https://github.com/FelipeGalway/whatsapp-bot
+cd whatsapp-bot
+```
 
-- Instale as dependências:
-    ```bash
-    npm install express cors sqlite3 puppeteer
-    ```
+### Passo 2: Instalar dependências
 
-- Inicie o servidor da API (Express):
-    ```bash
-    node server/index.js
-    ```
+- Se o projeto já inclui `package.json` (recomendado), execute:
 
-    - A API estará disponível em: http://localhost:3000
+```bash
+npm install
+```
 
-- Em outro terminal, execute o bot com Puppeteer:
-    ```bash
-    node puppeteer/bot.js
-    ```
+- Caso o `package.json` não exista, inicialize o projeto e instale as dependências:
 
-    - Um navegador será aberto com o WhatsApp Web.
+```bash
+npm init -y
+npm install express cors sqlite3 puppeteer
+```
 
-    - Escaneie o QR Code com seu celular.
+### Passo 3: Iniciar o servidor da API
 
-    - O bot fará a varredura dos contatos e mensagens, salvando no banco SQLite (`database/whatsapp.db`).
+```bash
+node server/index.js
+```
 
-- Abra a interface web:
+- A API estará disponível em: `http://localhost:3000`
 
-    - Navegue até o arquivo `frontend/index.html`
+### Passo 4: Executar o bot (em outro terminal)
 
-    - Você pode abrir no navegador diretamente, ou usar uma extensão como Live Server (VS Code) ou Five Server para evitar problemas com CORS.
+```bash
+node puppeteer/bot.js
+```
 
-    - Funcionalidades:
+- Um navegador será aberto com o WhatsApp Web.
 
-        - Carrega contatos e mensagens diretamente do banco
+- Escaneie o QR Code com seu celular.
 
-        - Interface web simulando o WhatsApp
+- O bot fará a varredura dos contatos e mensagens, salvando no banco SQLite em `database/whatsapp.db`.
 
-        - Envio de mensagens via front-end 
+### Passo 5: Abrir a interface web
+
+- Navegue até o arquivo `frontend/index.html` ou acesse diretamente via navegador:
+`http://localhost:3000/index.html`
+
+- Caso não funcione, utilize uma extensão para servir arquivos estáticos, como Live Server ou Five Server.
+
+- Funcionalidades da interface:
+
+    - Carrega contatos e mensagens do banco SQLite
+
+    - Interface web simulando o WhatsApp
+
+    - Envio de mensagens via front-end
+
+### Passo 6: Finalizando o uso
+
+- Para encerrar, pressione `Ctrl + C` em cada terminal onde estão rodando o bot e o servidor da API.
+
+- Para limpar os dados do banco:
+
+```bash
+sqlite3 database/whatsapp.db
+```
+
+- No prompt do SQLite, execute:
+
+```sql
+DELETE FROM contacts;
+DELETE FROM messages;
+```
+
+Alternativamente, você pode excluir manualmente o arquivo `database/whatsapp.db` para reiniciar o banco.
     
