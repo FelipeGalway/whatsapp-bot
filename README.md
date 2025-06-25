@@ -60,20 +60,21 @@ Este projeto é uma automação desenvolvida por **Felipe Ferreira**, utilizando
 whatsapp-bot/
 │
 ├── database/
-│   └── db.js           # Banco de dados SQLite
+│   └── db.js               # Banco de dados SQLite
+│
+├── frontend/   
+│   ├── index.html          # Interface web
+│   └── app.js              # Lógica de interface        
 │
 ├── puppeteer/
-│   └── bot.js          # Código de automação do WhatsApp Web
+│   └── bot.js              # Código de automação do WhatsApp Web
 │
 ├── server/
-│   └── index.js        # API com Express
+│   └── index.js            # API com Express
 │
-├── frontend/
-│   ├── index.html      # Interface web
-│   └── app.js          # Lógica de interface
-│
-├── README.md
-└── package.json
+├── package-lock.json
+├── package.json
+└── README.md
 ```
 
 ---
